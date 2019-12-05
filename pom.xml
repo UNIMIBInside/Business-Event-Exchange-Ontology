@@ -1,28 +1,33 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>EventsEWSArango</groupId>
-  <artifactId>EventsEWSArango</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <name>EventsEWSArango</name>
-  
-  <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>it.disco.unimib</groupId>
+	<artifactId>EventsEWSArango</artifactId>
+	<version>0.1</version>
+	<name>EventsDownloader</name>
+	<description>Event downloader service for ASIA</description>
+
+	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.1.0.RELEASE</version>
-		<relativePath /> <!-- lookup parent from repository -->
+		<version>2.1.6.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
+
 	<properties>
-		<java.version>1.7</java.version>
+		<java.version>1.8</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<springfox-version>2.7.0</springfox-version>
+		<docker.image.name>eventsdownloader</docker.image.name>
+		<docker.image.version>${project.version}</docker.image.version>
+		<docker.account.name>miciav</docker.account.name>
 	</properties>
-	
-	
-	
+
+
 	<build>
-		<sourceDirectory>src/main/java</sourceDirectory>
+		<sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -34,6 +39,62 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>1.2.1</version>
+				<configuration>
+					<imageName>${docker.account.name}/${docker.image.name}:${docker.image.version}</imageName>
+					<dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
+					<skipDocker>false</skipDocker>
+					<resources>
+						<resource>
+							<targetPath>/</targetPath>
+							<directory>${project.build.directory}</directory>
+							<include>${project.build.finalName}.jar</include>
+						</resource>
+					</resources>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.dkanejs.maven.plugins</groupId>
+				<artifactId>docker-compose-maven-plugin</artifactId>
+				<version>2.5.1</version>
+				<executions>
+					<execution>
+						<id>up</id>
+						<phase>pre-integration-test</phase>
+						<!--<phase>test</phase>-->
+						<goals>
+							<goal>up</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>down</id>
+						<phase>post-integration-test</phase>
+						<!--<phase>verify</phase>-->
+						<goals>
+							<goal>down</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<composeFiles>
+						<composeFile>${project.basedir}/src/main/docker/docker-compose.yaml</composeFile>
+					</composeFiles>
+					<detachedMode>true</detachedMode>
+					<removeVolumes>true</removeVolumes>
+					<removeOrphans>true</removeOrphans>
+					<removeImages>true</removeImages>
+					<removeImagesType>local</removeImagesType>
+					<build>false</build>
+					<detail>true</detail>
+					<verbose>false</verbose>
+					<projectName>prova</projectName>
+					<!--<apiVersion>1.22</apiVersion>-->
+					<!--<apiVersion>1.39</apiVersion>-->
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

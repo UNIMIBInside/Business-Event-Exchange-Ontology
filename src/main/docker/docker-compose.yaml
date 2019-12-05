@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo:3.6
+    restart: always
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    ports:
+      - 27017:27017
+    command: mongod --smallfiles --logpath=/dev/null # --quiet
+
+  app:
+    image: miciav/eventsdownloader:0.1
+    volumes:
+      - ./app:/app
+      - ~/.m2:/root/.m2
+    expose:
+      - 8080
+    depends_on:
+      - mongodb
