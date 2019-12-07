@@ -3,8 +3,9 @@ package it.disco.unimib;
 import it.disco.unimib.model.Event;
 import it.disco.unimib.model.EventsArray;
 import it.disco.unimib.repository.EventRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.Banner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,21 +28,40 @@ import java.util.List;
 
 @SpringBootApplication
 @Configuration
+@Log
 public class EWSEventApp implements CommandLineRunner {
-	
-	@Autowired
+
+	final
 	EventRepository eventRepo;
+
+	final
+	ArangoConf conf;
 
 	@Value("${API}")
 	private String API;
 
+	public EWSEventApp(EventRepository eventRepo, ArangoConf conf) {
+		this.eventRepo = eventRepo;
+		this.conf = conf;
+	}
+
+
 	public static void main(String[] args) throws Exception {
-		SpringApplication.run(EWSEventApp.class, args);
+
+		SpringApplication app = new SpringApplication(EWSEventApp.class);
+		app.setBannerMode(Banner.Mode.OFF);
+		app.run(args);
+
 	}
 
 	
 	@Override
 	public void run(String... args) throws Exception {
+
+		System.out.println(conf.database());
+		System.out.println();
+
+
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 		String date = formatter.format(OffsetDateTime.now());
 		int N = 0;
@@ -71,17 +91,17 @@ public class EWSEventApp implements CommandLineRunner {
 			for (Event event : events.getEventArray())
 				eventRepo.save(event);
 
-			System.out.println(response.getStatusCode());
-			System.out.println("added" + events.getEventArray().size() + " events");
-		} 
-		catch (final HttpClientErrorException e) {
+			log.info(response.getStatusCode().toString());
+			log.info("added " + events.getEventArray().size() + " events.");
+		} catch (final HttpClientErrorException e) {
 			System.out.println(e.getStatusCode());
 			System.out.println(e.getResponseBodyAsString());
-		} 
-		catch (HttpServerErrorException e) {
+		} catch (HttpServerErrorException e) {
 			System.out.println(e.getStatusCode());
 			System.out.println(e.getResponseBodyAsString());
 		}
+
+		System.exit(0);
 
 	}
 

@@ -1,10 +1,10 @@
 package it.disco.unimib;
 
 
-import com.arangodb.ArangoDB;
 import com.arangodb.ArangoDB.Builder;
 import com.arangodb.springframework.annotation.EnableArangoRepositories;
 import com.arangodb.springframework.config.ArangoConfiguration;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableArangoRepositories(basePackages = {"it.disco.unimib"})
+@Log
 public class ArangoConf implements ArangoConfiguration {
 
 	@Value("${arango.host}")
@@ -27,7 +28,14 @@ public class ArangoConf implements ArangoConfiguration {
 
 	@Override
 	public Builder arango() {
-		return new ArangoDB.Builder().host(host, port).user(user).password(password);
+
+		log.info("host: " + host);
+		log.info("port: " + port);
+		log.info("user: " + user);
+		log.info("database: " + database);
+
+		Builder builder = new Builder().host(host, port).user(user).password(password);
+		return builder;
 	}
 
 	@Override

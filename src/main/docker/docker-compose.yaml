@@ -1,22 +1,25 @@
 version: '3.7'
 services:
-  mongodb:
-    container_name: mongodb
-    image: mongo:3.6
+  arangodb:
+    container_name: arangodb
+    image: arangodb:latest
     restart: always
     environment:
-      - MONGO_DATA_DIR=/data/db
-      - MONGO_LOG_DIR=/dev/null
+      - ARANGO_ROOT_PASSWORD=openSesame
+    #      - ARANGO_RANDOM_ROOT_PASSWORD=1
+    #      - ARANGO_NO_AUTH=0
     ports:
-      - 27017:27017
-    command: mongod --smallfiles --logpath=/dev/null # --quiet
-
+      - 8529:8529
+    volumes:
+      - ../../../arangodb:/var/lib/arangodb3
   app:
     image: miciav/eventsdownloader:0.1
-    volumes:
-      - ./app:/app
-      - ~/.m2:/root/.m2
+    environment:
+      - ARANGO_HOST=arangodb
+      - ARANGO_USER=root
+      - ARANGO_PASSWORD=openSesame
+      - ARANGO_EVENTS=events
     expose:
       - 8080
     depends_on:
-      - mongodb
+      - arangodb
