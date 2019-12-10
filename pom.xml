@@ -162,12 +162,19 @@
 			<artifactId>jackson-annotations</artifactId>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/com.arangodb/arangodb-spring-data -->
+
 		<dependency>
 			<groupId>com.arangodb</groupId>
-			<artifactId>arangodb-spring-data</artifactId>
-			<version>3.2.3</version>
+			<artifactId>arangodb-spring-boot-starter</artifactId>
+			<version>1.0.2</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.github.paulcwarren</groupId>
+			<artifactId>spring-content-fs-boot-starter</artifactId>
+			<version>1.0.0.M1</version>
+		</dependency>
+
 
 		<!-- https://mvnrepository.com/artifact/org.apache.jena/jena-core -->
 		<dependency>

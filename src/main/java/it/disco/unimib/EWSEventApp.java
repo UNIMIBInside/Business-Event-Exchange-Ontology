@@ -1,8 +1,8 @@
 package it.disco.unimib;
 
-import it.disco.unimib.model.Event;
+import com.arangodb.springframework.boot.autoconfigure.ArangoAutoConfiguration;
 import it.disco.unimib.model.EventsArray;
-import it.disco.unimib.repository.EventRepository;
+import it.disco.unimib.service.StoreEvents;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
@@ -16,93 +16,130 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.ParseException;
+import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = ArangoAutoConfiguration.class)
 @Configuration
 @Log
 public class EWSEventApp implements CommandLineRunner {
 
-	final
-	EventRepository eventRepo;
+    final StoreEvents storeEvents;
 
-	final
-	ArangoConf conf;
+    RestTemplate restTemplate = new RestTemplate();
 
-	@Value("${API}")
-	private String API;
+    @Value("${API}")
+    private String EventEndpointAPI;
 
-	public EWSEventApp(EventRepository eventRepo, ArangoConf conf) {
-		this.eventRepo = eventRepo;
-		this.conf = conf;
-	}
+    @Value("${num_days:0}")
+    private int NumDays;
 
+    @Value("${starting_date:null}")
+    private String startingDate;
 
-	public static void main(String[] args) throws Exception {
+    @Value("${ending_date:null}")
+    private String endingDate;
 
-		SpringApplication app = new SpringApplication(EWSEventApp.class);
-		app.setBannerMode(Banner.Mode.OFF);
-		app.run(args);
+    @Value("${spring.data.arangodb.hosts:''}")
+    private String host;
 
-	}
+    @Value("${spring.data.arangodb.database:''}")
+    private String database;
 
-	
-	@Override
-	public void run(String... args) throws Exception {
-
-		System.out.println(conf.database());
-		System.out.println();
+    public EWSEventApp(StoreEvents storeEvents) {
+        this.storeEvents = storeEvents;
+    }
 
 
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
-		String date = formatter.format(OffsetDateTime.now());
-		int N = 0;
+    public static void main(String[] args) throws Exception {
 
-		if (args.length != 0) {
-			date = args[0];
-			if (args.length > 1)
-				N = Integer.valueOf(args[1]);
-		}
+        SpringApplication app = new SpringApplication(EWSEventApp.class);
+        app.setBannerMode(Banner.Mode.OFF);
+        app.run(args);
 
-		RestTemplate restTemplate = new RestTemplate();
-		String url = API + date;
-		if(N!=0)
-			url	+= "P" + N;
+    }
 
-		try {
-			// to support responses not only in application/json content type
-			List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
-			MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-			converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-			messageConverters.add(converter);
-			restTemplate.setMessageConverters(messageConverters);
+    public static boolean isValidFormat(String value, DateTimeFormatter formatter) {
+        LocalDate date;
+        try {
+            date = LocalDate.parse(value, formatter);
+        } catch (DateTimeException e) {
+            e.printStackTrace();
+            date = null;
+        }
+        return date != null;
+    }
 
-			ResponseEntity<EventsArray> response = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<EventsArray>() {
-			});
-			EventsArray events = response.getBody();
-			for (Event event : events.getEventArray())
-				eventRepo.save(event);
+    @Override
+    public void run(String... args) throws Exception {
 
-			log.info(response.getStatusCode().toString());
-			log.info("added " + events.getEventArray().size() + " events.");
-		} catch (final HttpClientErrorException e) {
-			System.out.println(e.getStatusCode());
-			System.out.println(e.getResponseBodyAsString());
-		} catch (HttpServerErrorException e) {
-			System.out.println(e.getStatusCode());
-			System.out.println(e.getResponseBodyAsString());
-		}
+        log.info("ArangoDB host: " + host);
+        log.info("ArangoDB database: " + database);
+        processDateProperties();
+        log.info("Starting date: " + startingDate);
+        log.info("Ending date: " + endingDate);
+        log.info("Number of days: " + NumDays);
 
-		System.exit(0);
 
-	}
+        String url = EventEndpointAPI + startingDate;
+        if (NumDays >= 0) url += "P" + NumDays;
+
+        log.info("Endpoint: " + url);
+
+        EventsArray events = retrieveRemoteCustomEvents(url);
+        storeEvents.Store(events.getEventArray());
+
+        log.info("added " + events.getEventArray().size() + " events.");
+
+
+        System.exit(0);
+
+    }
+
+    private EventsArray retrieveRemoteCustomEvents(String url) {
+        // to support responses not only in application/json content type
+        List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
+        messageConverters.add(converter);
+        restTemplate.setMessageConverters(messageConverters);
+
+        ResponseEntity<EventsArray> response = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<EventsArray>() {
+        });
+        EventsArray events = response.getBody();
+        log.info(response.getStatusCode().toString());
+        return events;
+    }
+
+    private void processDateProperties() throws ParseException {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+        if (startingDate.equalsIgnoreCase("null")) {
+            startingDate = formatter.format(OffsetDateTime.now());
+        } else if (!isValidFormat(startingDate, formatter)) {
+            log.severe("Starting date - invalid format");
+            System.exit(1);
+        }
+
+        if (!endingDate.equalsIgnoreCase("null")) {
+            if (!isValidFormat(endingDate, formatter)) {
+                log.severe("Ending date - invalid format");
+                System.exit(1);
+            }
+            LocalDate end = LocalDate.parse(endingDate, formatter);
+            LocalDate start = LocalDate.parse(startingDate, formatter);
+
+            final long days = ChronoUnit.DAYS.between(start, end);
+            if (days >= 0) NumDays = (int) days;
+        }
+    }
 
 }

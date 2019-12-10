@@ -19,6 +19,7 @@ services:
       - ARANGO_USER=root
       - ARANGO_PASSWORD=openSesame
       - ARANGO_EVENTS=events
+      - API=https://cep.cocos.si/nodeproxy/cep/v1/customEvents/event/
     expose:
       - 8080
     depends_on:
