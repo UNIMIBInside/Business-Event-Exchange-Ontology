@@ -21,15 +21,20 @@ import java.nio.file.Paths;
 @ConditionalOnProperty(name = "outputOnFile", havingValue = "enabled")
 public class FileRepository {
 
+
+    private String pathName;
     private String folderName;
     private String fileName;
     private BufferedWriter bufferedWriter;
+    private Path resultsFullPath;
 
     @Autowired
-    public FileRepository(@Value("${fileName:output.txt}") String fileName,
-                          @Value("${folderName:results}") String folderName) throws IOException {
+    public FileRepository(@Value("${working_path:~}") String pathName,
+                          @Value("${fileName:output.txt}") String fileName,
+                          @Value("${results_dir:results}") String folderName) throws IOException {
         this.fileName = fileName;
         this.folderName = folderName;
+        this.pathName = pathName;
         createOrEmptyFolder();
     }
 
@@ -56,15 +61,16 @@ public class FileRepository {
     }
 
     private void createOrEmptyFolder() throws IOException {
-        File dir = new File(folderName);
+        Path path = Paths.get(pathName, folderName);
+        resultsFullPath = path.toAbsolutePath();
+        File dir = new File(path.toUri());
         if (!dir.exists()) dir.mkdir();
         else FileUtils.cleanDirectory(dir);
     }
 
     private void createFile() throws IOException {
-        Path path = Paths.get(folderName, fileName);
+        Path path = Paths.get(resultsFullPath.toString(), fileName);
         File file = new File(path.toUri());
-
         if (!file.exists()) path = Files.createFile(path);
         bufferedWriter = Files.newBufferedWriter(path);
 

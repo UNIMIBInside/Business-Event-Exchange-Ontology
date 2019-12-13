@@ -50,10 +50,11 @@
 					<skipDocker>false</skipDocker>
 					<resources>
 						<resource>
-							<targetPath>/</targetPath>
-							<directory>${project.build.directory}</directory>
-							<include>${project.build.finalName}.jar</include>
-						</resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}.jar</include>
+                            <include>bash_scripts,common_scripts</include>
+                        </resource>
 					</resources>
 				</configuration>
 			</plugin>
@@ -81,20 +82,20 @@
 				</executions>
 				<configuration>
 					<composeFiles>
-						<composeFile>${project.basedir}/src/main/docker/docker-compose.yaml</composeFile>
-					</composeFiles>
-					<detachedMode>true</detachedMode>
-					<removeVolumes>true</removeVolumes>
-					<removeOrphans>true</removeOrphans>
-					<removeImages>true</removeImages>
-					<removeImagesType>local</removeImagesType>
-					<build>false</build>
-					<detail>true</detail>
-					<verbose>false</verbose>
-					<projectName>prova</projectName>
-					<!--<apiVersion>1.22</apiVersion>-->
-					<!--<apiVersion>1.39</apiVersion>-->
-				</configuration>
+                        <composeFile>${project.basedir}/src/main/docker/docker-compose.yaml</composeFile>
+                    </composeFiles>
+                    <detachedMode>true</detachedMode>
+                    <removeVolumes>true</removeVolumes>
+                    <removeOrphans>true</removeOrphans>
+                    <removeImages>true</removeImages>
+                    <removeImagesType>local</removeImagesType>
+                    <build>false</build>
+                    <detail>true</detail>
+                    <verbose>false</verbose>
+                    <projectName>ewsevents</projectName>
+                    <!--<apiVersion>1.22</apiVersion>-->
+                    <!--<apiVersion>1.39</apiVersion>-->
+                </configuration>
 			</plugin>
 		</plugins>
 	</build>

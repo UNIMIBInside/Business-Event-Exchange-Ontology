@@ -55,6 +55,17 @@ public class EWSEventApp implements CommandLineRunner {
     @Value("${spring.data.arangodb.database:''}")
     private String database;
 
+    @Value("${working_path:~}")
+    private String pathName;
+    @Value("${fileName:output.txt}")
+    private String fileName;
+    @Value("${results_dir:results}")
+    private String folderName;
+
+    @Value("${spring.autoconfigure.exclude:null}")
+    private String exclude;
+
+
     public EWSEventApp(StoreEvents storeEvents) {
         this.storeEvents = storeEvents;
     }
@@ -82,13 +93,17 @@ public class EWSEventApp implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        log.info("ArangoDB host: " + host);
-        log.info("ArangoDB database: " + database);
+        if (!exclude.equalsIgnoreCase("null")) {
+            log.info("ArangoDB host: " + host);
+            log.info("ArangoDB database: " + database);
+        }
         processDateProperties();
         log.info("Starting date: " + startingDate);
         log.info("Ending date: " + endingDate);
         log.info("Number of days: " + NumDays);
-
+        log.info("Path name: " + pathName);
+        log.info("Folder name " + folderName);
+        log.info("File name: " + fileName);
 
         String url = EventEndpointAPI + startingDate;
         if (NumDays >= 0) url += "P" + NumDays;
