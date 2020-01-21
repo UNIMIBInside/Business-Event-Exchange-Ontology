@@ -3,14 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>it.disco.unimib</groupId>
 	<artifactId>EventsEWSArango</artifactId>
-	<version>0.1</version>
+	<version>0.2</version>
 	<name>EventsDownloader</name>
 	<description>Event downloader service for ASIA</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.1.6.RELEASE</version>
+		<version>2.2.2.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
@@ -175,7 +175,36 @@
 			<artifactId>spring-content-fs-boot-starter</artifactId>
 			<version>1.0.0.M1</version>
 		</dependency>
-
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>2.10</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured-all</artifactId>
+			<version>4.1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<version>4.1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>1.12.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest</artifactId>
+			<version>2.2</version>
+		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.apache.jena/jena-core -->
 		<dependency>

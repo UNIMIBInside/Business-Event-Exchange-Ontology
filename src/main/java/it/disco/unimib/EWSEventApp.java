@@ -1,9 +1,9 @@
 package it.disco.unimib;
 
-import com.arangodb.springframework.boot.autoconfigure.ArangoAutoConfiguration;
 import it.disco.unimib.model.EventsArray;
-import it.disco.unimib.service.StoreEvents;
+import it.disco.unimib.service.EventManager;
 import lombok.extern.java.Log;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
 import org.springframework.boot.CommandLineRunner;
@@ -28,12 +28,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@SpringBootApplication(exclude = ArangoAutoConfiguration.class)
+@SpringBootApplication
 @Configuration
 @Log
 public class EWSEventApp implements CommandLineRunner {
 
-    final StoreEvents storeEvents;
+    final EventManager eventManager;
 
     RestTemplate restTemplate = new RestTemplate();
 
@@ -49,25 +49,17 @@ public class EWSEventApp implements CommandLineRunner {
     @Value("${ending_date:null}")
     private String endingDate;
 
-    @Value("${spring.data.arangodb.hosts:''}")
-    private String host;
+    @Value("${working_mode:slow}") // two possible working modes slow and fast
+    private String mode;
 
-    @Value("${spring.data.arangodb.database:''}")
-    private String database;
+    @Value("${test_mode:false}")
+    private Boolean testMode;
 
-    @Value("${working_path:~}")
-    private String pathName;
-    @Value("${fileName:output.txt}")
-    private String fileName;
-    @Value("${results_dir:results}")
-    private String folderName;
+    @Value("${delete_old_events:false}")
+    private Boolean deleteOldEvents;
 
-    @Value("${spring.autoconfigure.exclude:null}")
-    private String exclude;
-
-
-    public EWSEventApp(StoreEvents storeEvents) {
-        this.storeEvents = storeEvents;
+    public EWSEventApp(EventManager eventManager) {
+        this.eventManager = eventManager;
     }
 
 
@@ -90,34 +82,11 @@ public class EWSEventApp implements CommandLineRunner {
         return date != null;
     }
 
-    @Override
-    public void run(String... args) throws Exception {
-
-        if (!exclude.equalsIgnoreCase("null")) {
-            log.info("ArangoDB host: " + host);
-            log.info("ArangoDB database: " + database);
-        }
-        processDateProperties();
-        log.info("Starting date: " + startingDate);
-        log.info("Ending date: " + endingDate);
-        log.info("Number of days: " + NumDays);
-        log.info("Path name: " + pathName);
-        log.info("Folder name " + folderName);
-        log.info("File name: " + fileName);
-
-        String url = EventEndpointAPI + startingDate;
-        if (NumDays >= 0) url += "P" + NumDays;
-
-        log.info("Endpoint: " + url);
-
-        EventsArray events = retrieveRemoteCustomEvents(url);
-        storeEvents.Store(events.getEventArray());
-
-        log.info("added " + events.getEventArray().size() + " events.");
-
-
-        System.exit(0);
-
+    private static String addDaysJodaTime(String date, int daysToAdd) {
+        DateTime dateTime = new DateTime(date);
+        return dateTime
+                .plusDays(daysToAdd)
+                .toString("yyyy-MM-dd");
     }
 
     private EventsArray retrieveRemoteCustomEvents(String url) {
@@ -155,6 +124,43 @@ public class EWSEventApp implements CommandLineRunner {
             final long days = ChronoUnit.DAYS.between(start, end);
             if (days >= 0) NumDays = (int) days;
         }
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+
+
+        processDateProperties();
+        log.info("Starting date: " + startingDate);
+        log.info("Ending date: " + endingDate);
+        log.info("Number of days: " + NumDays);
+
+        if (deleteOldEvents) eventManager.deleteAll();
+
+        if (mode.equalsIgnoreCase("fast")) {
+            String url = EventEndpointAPI + startingDate;
+            if (NumDays >= 0) url += "P" + NumDays;
+            log.info("Endpoint: " + url);
+
+            EventsArray events = retrieveRemoteCustomEvents(url);
+            eventManager.store(events.getEventArray());
+
+            log.info("added " + events.getEventArray().size() + " events.");
+        } else if (mode.equalsIgnoreCase("slow")) {
+            String url = "";
+            int tot_events = 0;
+            for (int i = 0; i < NumDays; i++) {
+                url = EventEndpointAPI + addDaysJodaTime(startingDate, i);
+                EventsArray events = retrieveRemoteCustomEvents(url);
+                eventManager.store(events.getEventArray());
+                tot_events += events.getEventArray().size();
+            }
+            log.info("downloaded events form " + NumDays + " days");
+            log.info("added " + tot_events + " events.");
+        } else log.severe("No event could be retrieved because of a wrong working mode");
+
+        if (!testMode) System.exit(0);
+
     }
 
 }

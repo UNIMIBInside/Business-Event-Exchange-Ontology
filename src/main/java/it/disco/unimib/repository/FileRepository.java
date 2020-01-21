@@ -3,6 +3,7 @@ package it.disco.unimib.repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.disco.unimib.model.Event;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +59,13 @@ public class FileRepository {
 
         bufferedWriter.flush();
 
+    }
+
+    @SneakyThrows
+    public void deleteAll() {
+        Path path = Paths.get(resultsFullPath.toString(), fileName);
+        File file = new File(path.toUri());
+        if (file.exists()) Files.delete(path);
     }
 
     private void createOrEmptyFolder() throws IOException {
